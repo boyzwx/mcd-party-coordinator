@@ -83,29 +83,25 @@ export MCD_MCP_TOKEN="你的 MCP Token"
 
 设计上，单次聚餐协调仅需 4~6 次 MCP 调用，远低于限流阈值。
 
-## 五之二、开发期间发现的服务器端问题
+## 五之二、开发期间发现的服务器端问题（已解决）
 
-开发过程中对 `mcp.mcd.cn` 做 TLS 握手排查，发现如下情况（如实记录）：
+开发过程中对 `mcp.mcd.cn` 做 TLS 握手排查，曾发现服务器只下发叶子证书（`CN=mcp.mcd.cn`），
+**缺失中间 CA 证书**，严格 TLS 校验客户端握手失败（`Verify return code: 21`，表现为 `fetch failed`）。
+当时判断为 CDN 侧证书链配置遗漏。
+
+**当前状态（2026-10-09 17:10 复测）：已修复。**
 
 ```
-下发证书数量: 1 张
-Verify return code: 21 (unable to verify the first certificate)
+下发证书数量: 2 张（叶子 *.mcd.cn + DigiCert GeoTrust RSA CA G1 中间证书）
+Verify return code: 0 (ok)
 ```
 
-服务器只下发叶子证书（`CN=mcp.mcd.cn`，VeriSign 签发），**未下发中间 CA 证书**。
-启用严格 TLS 校验的客户端会因此在握手阶段失败，表现为 `fetch failed`。
-
-对照测试：`www.mcdonalds.com.cn` 存在相同现象，判断为 CDN 侧证书链配置遗漏。
-
+`initialize` 握手返回 HTTP 200，`tools/list` 返回真实工具列表，服务已可正常打通。
 排查脚本见 `scripts/diagnose.sh`，可复现验证。
 
-**对本项目的影响**：MCP 联调需等待服务器侧补全证书链。
-本地算法（`scripts/split_bill.py`）与执行流程逻辑不受影响，已通过 12 个测试用例验证。
-
-**不做的事**：不通过关闭 TLS 校验来绕过。降低证书验证强度属于安全降级，
-会带来中间人攻击风险，且不符合开发者应有的安全实践。
-
-**建议**：已向麦当劳顾客中心（400-920-0205）反馈该问题。
+**安全原则（仍适用）**：本项目不通过关闭 TLS 校验来绕过任何证书问题。
+降低证书验证强度属于安全降级，会带来中间人攻击风险，且不符合开发者应有的安全实践。
+若未来再次出现证书异常，应反馈官方而非绕过。
 
 ## 六、数据真实性
 
