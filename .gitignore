@@ -1,0 +1,22 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.env
+
+# 系统
+.DS_Store
+Thumbs.db
+
+# 编辑器
+.vscode/
+.idea/
+*.swp
+
+# Token 与凭证（重要：不得提交任何真实凭证）
+.env
+.env.local
+mcp-config.json
+*.token
+secrets/
